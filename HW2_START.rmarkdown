@@ -172,32 +172,32 @@ head(match_data)
 
 match_data %>% 
     select( # select column we want to compare 
-        log_home_val_07, p_uni_degree, log_median_inc, log_pop_denc, proposed_turbine_3km
+        proposed_turbine_3km, change_liberal, log_wind_power, log_home_val_07, 
+        p_
+        
     ) %>% 
-    tbl_summary ( # Create balance table 
+    tbl_summary (
         by = proposed_turbine_3km, 
         statistic = list(
             all_continuous() ~ "{mean} ({sd})",
             all_categorical() ~ "{n} ({p}%)"
-    )) %>%  # modify headers 
-  modify_header(label ~ "**Covariate**") %>%
-  modify_spanning_header(c("stat_1", "stat_2") ~ "**Group**")
+    )
  
 ```
 
 **2B.Q1** Summarize the table output: Which covariates look balanced/imbalanced?
 
--   All covariates look pretty balanced. The covariate with the largest difference between control and treatment is the `log_pop_denc`. But `log_pop_denc` also has a large standard deviation, so there is not much of an imbalance.
+*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 **2B.Q2** Describe in your own words why these covariates might be expected to confound the treatment estimate:
 
--   These covariates relate to economic status and home location (rural vs urban) which are all confounding variables (discussed in **1A.Q2**) possibly impacting the communities voting behavior.
+*Response (2-4 sentences):* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 ------------------------------------------------------------------------
 
 **2B.Q3** Intuition check: What type of data do you need to conduct a matching analysis?
 
--   Panel data is necessary when conducting matching analysis. Panel data is when observations are repeated in various clusters/groups/levels.
+*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 ------------------------------------------------------------------------
 
@@ -227,8 +227,7 @@ Learning goals:
 set.seed(2412026)
 
 match_model <- matchit(
-    # Treatment_indicator ~  Pre_treatment_covariates
-    proposed_turbine_3km ~ log_home_val_07 + p_uni_degree + log_median_inc + log_pop_denc,
+     # Treatment_indicator ~  Pre_treatment_covariates
   data = match_data, 
   method = "nearest",       # Nearest neighbor matching
   distance = "mahalanobis", # Mahalanobis distance
@@ -247,11 +246,7 @@ summary(match_model)
 
 **2C.Q1** Using the `summary()` output: Which covariate had the largest and smallest `Std. Mean Diff.` before matching. Next, compare largest/smallest `Std. Mean Diff.` after matching.
 
-**COMPARE TO OTHERS. IDK IF LOOK AT [ABOSOLUTE VALUES]{.underline} (lowest = closest to 0) OR NOT (lowest = most negative)**
-
--   Before matching, `log_pop_den` covariate had the largest `Std. Mean Diff` and `log_median_inc` covariate had the smallest.
-
--   After matching, `log_pop_den` covariate had the largest `Std. Mean Diff` and `log_median_inc` covariate had the smallest.
+*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 ------------------------------------------------------------------------
 
@@ -272,7 +267,7 @@ summary(match_model)
 
 new_names <- data.frame(
     old = c("log_home_val_07", "p_uni_degree", "log_median_inc", "log_pop_denc"),
-    new = c("Home Value (log)", "Pe <- rcent University Degree",
+    new = c("Home Value (log)", "Percent University Degree",
             "Median Income (log)", "Population Density (log)"))
 
 # Love plot
@@ -284,7 +279,7 @@ love.plot(match_model, stats = "mean.diffs",
 
 **2D.Q1** Interpret the love plot in your own words:
 
--   Love plots visualize standardized mean differences (before and after matching). This love plot shows population density and percent university degree was imbalanced between groups before matching. After matching, all confounding variables are similar between groups, reducing bias.
+*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 ------------------------------------------------------------------------
 
@@ -301,15 +296,7 @@ love.plot(match_model, stats = "mean.diffs",
 
 set.seed(2412026)
 
-propensity_scores <- matchit(
-    # Treatment_indicator ~  Pre_treatment_covariates
-    proposed_turbine_3km ~ log_home_val_07 + p_uni_degree + log_median_inc + log_pop_denc,
-    data = match_data, 
-    method = "nearest", # Nearest neighbor matching
-    distance = "logit", # Propensity Score Matching (PSM)
-    ratio = 1, # Match one control unit to one treatment unit (1:1 matching)
-    replace = FALSE # Control observations are not replaced
-)
+propensity_scores <- 
     
 ```
 
@@ -322,20 +309,15 @@ propensity_scores <- matchit(
 Use `bal.tab()` to report balance before and after matching.
 
 ```{r}
-# reporting balance from propensity_scores
-bal.tab(propensity_scores, 
-        var.names = new_names)
 
-# Looking at propensity_scores love plot 
-love.plot(propensity_scores, stats = "mean.diffs",
-          thresholds = c(m = 0.1),
-          var.names = new_names)
+bal.tab(propensity_scores, 
+        var.names = new_names) 
 
 ```
 
 **2E.Q1** Compare Mahalanobis vs propensity score matching. Which method did a better job at achieving balance?
 
--   When comparing Mahalanobis vs propensity score `Std. Mean Diff.`, Mahalanobis did a better job of achieving balance.
+*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 ------------------------------------------------------------------------
 
@@ -344,30 +326,23 @@ love.plot(propensity_scores, stats = "mean.diffs",
 Using the matched data (Mahalanobis method), estimate the effect of treatment on the change in incumbent vote share (`change_liberal`).
 
 ```{r}
-# Regression: vote shares based on turbine proximity 
-reg_match <- lm(
-    change_liberal ~ proposed_turbine_3km, 
-    data = matched_data
-)
 
-summ(reg_match, model.fit = FALSE)
+reg_match <- 
+
+#summ(, model.fit = FALSE)
 ```
-
-Coefficient Interpretations
-
--   Without treatment, Liberal Party voting share is expected to average about -0.07. With treatment (proximity to wind turbines), there is an expected 0.06 decrease in Liberal Party voting shares. Standard deviation is small, and there is statistical significance in this prediction.
 
 **2F.Q1** Have you identified a causal estimate using this approach: Why or why not?
 
--   No. Matching only balances the *observed* covariates (home value, education, income, population density). While this improves balance and variable independence, matching does not address *unobserved* confounders that impact turbine placement and voting changes.
+*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 **2F.Q2** When using a matching method, what is the main threat to causal identification?
 
--   Matching method assume there is no other systematic differences between treated and control groups other than the chosen matched variables. Unobserved variables are unaccounted for and can create bias in the outcomes, threatening causal identification reliability.
+*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 **2F.Q3** Describe why the treatment estimate represents the `Average Treatment for the Treated (ATT)` and explain why this is the case relative to estimation of the `Average Treatment Effect (ATE)`.
 
--   In this study, we matched by finding one similar control unit for each treated unit. Therefore, while all treated units are included, only some of the control units were included in the `match_model`. ATT focuses on the average effect of the treated based on those who received treatment. Because the model includes all treatment groups, the estimatations represent the ATT. On the other hand, ATE measures the average effect of a treatment across the entire population. Because the model does not include the entire population, `match_model` does not estimate the ATE.
+*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 ------------------------------------------------------------------------
 
@@ -380,44 +355,37 @@ Coefficient Interpretations
 #### **3A:** Read in the panel data + code variables `precinct_id` and `year` as factors
 
 ```{r}
-# Read in data 
-panel_data <- read_csv(here::here("data", "Stokes15_panel_data.csv"))
+
+panel_data <- 
 
 # HINT: Try running `tabyl(panel_data$year)`. Review article to make sense of the row numbers (n).
-tabyl(panel_data$year)
-
-# Year and precinct_id as factor 
-panel_data$year <- as.factor(panel_data$year)
-panel_data$precinct_id <- as.factor(panel_data$precinct_id)
 
 ```
 
 **3A.Q1:** Why are there 18,558 rows in `panel_data`?
 
--   There are a total of 6186 precincts that have repeating measurementss (voting shares) for 3 different years (2003, 2007, 2011).
-
--   6186 \* 3 = 18,558
+*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 ```{r}
-# How many years are included in the panel? - 3 years: 2003, 2007, 2011
-unique(panel_data$year)
-# How many precincts are there? - 6186 
-str(panel_data)
+# How many years are included in the panel?
+
+# How many precincts are there?
+
 ```
 
 **3A.Q2:** How many unique precincts are *ever treated* (i.e., `proposed` & `operational`)?
 
--   Of the treatment precincts, 184 had proposed turbines and 52 had operational turbines.
+*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 ```{r}
 
 panel_data %>%
-  group_by(precinct_id) %>% # Grouping for each precincts
-  summarise( # seperating prosposed vs operational turbines 
+  group_by(precinct_id) %>%
+  summarise(
     ever_proposed    = any(proposed_turbine == 1, na.rm = TRUE),
     ever_operational = any(operational_turbine == 1, na.rm = TRUE),
     .groups = "drop") %>%
-  summarise( # Total count 
+  summarise(
     n_ever_proposed    = sum(ever_proposed),
     n_ever_operational = sum(ever_operational))
 
@@ -434,21 +402,21 @@ panel_data %>%
 Step 1: Prepare data
 
 ```{r}
-# Indicators: control vs treatment group (treatment: `treat_o` vs `treat_p`)
+
 trends_data <- panel_data %>%
-  group_by(precinct_id) %>% # group by precinct 
-  mutate( 
+  group_by(precinct_id) %>%
+  mutate(
     treat_p = as.integer(any(proposed_turbine == 1, na.rm = TRUE)),  # ever proposed (in any year)
     treat_o = as.integer(any(operational_turbine == 1, na.rm = TRUE))) %>% # ever operational (in any year)
   ungroup() %>% 
-  pivot_longer(c(treat_p, treat_o), # new col `turbine_type` - with treat_p and treat_o
+  pivot_longer(c(treat_p, treat_o),
                names_to = "turbine_type", values_to = "treat") %>% 
-  mutate( # Make `turbine_type` a factor 
+  mutate(
       turbine_type = factor(turbine_type,
                             levels = c("treat_p", "treat_o"),
                             labels = c("Proposed turbines", "Operational turbines")),  
-    status = if_else(treat == 1, "Treated", "Control"), # control and treatment col 
-    year   = factor(year)) # Making sure year is a factor 
+    status = if_else(treat == 1, "Treated", "Control"),
+    year   = factor(year))
 
 ```
 
@@ -459,20 +427,20 @@ Step 2: Create trends plot
 pd <- position_dodge(width = 0.15)
 
 trends_data %>%
-  group_by(turbine_type, status, year) %>% # Grouping Group (T vs C), year, and Treatment type (operational vs proposed)
-  summarise( 
-    mean = mean(perc_lib, na.rm = TRUE), # mean of voting share
-    n    = sum(!is.na(perc_lib)), # count 
-    se   = sd(perc_lib, na.rm = TRUE) / sqrt(n), # Standard error 
-    ci   = qt(.975, df = pmax(n - 1, 1)) * se, # Confidence intervals 
+  group_by(turbine_type, status, year) %>%
+  summarise(
+    mean = mean(perc_lib, na.rm = TRUE),
+    n    = sum(!is.na(perc_lib)),
+    se   = sd(perc_lib, na.rm = TRUE) / sqrt(n), 
+    ci   = qt(.975, df = pmax(n - 1, 1)) * se,
     .groups = "drop") %>%
-ggplot(aes(year, mean, color = status, group = status)) + # PLOT! 
-  geom_line(position = pd, linewidth = 1.2) + # line plot with points 
+ggplot(aes(year, mean, color = status, group = status)) +
+  geom_line(position = pd, linewidth = 1.2) +
   geom_point(position = pd, size = 2.6) +
-  geom_errorbar( # CI 
+  geom_errorbar(
     aes(ymin = mean - ci, ymax = mean + ci),
     position = pd, width = .12, linewidth = .7, color = "black") +
-  facet_wrap(~ turbine_type, nrow = 1) + # 2 plots - opertaional vs proposed turbines 
+  facet_wrap(~ turbine_type, nrow = 1) +
   scale_color_manual(values = c(Control = "#0072B2", Treated = "#B22222")) +
   scale_y_continuous(labels = percent_format(accuracy = 1)) +
   coord_cartesian(ylim = c(.20, .57)) +
@@ -491,9 +459,7 @@ ggplot(aes(year, mean, color = status, group = status)) + # PLOT!
 
 **3B.Q1:** Write a short paragraph assessing the parallel trends assumption for each outcome.
 
--   Background: In this study, pre-treatment is considered the 2003 voting shares. In 2006, the FIT policy was initated on a small scale. Therefore, early turbines proposals and operations began in 2007. In 2009, the law that refused communities to reject renewable energy started. Full effects of the 2009 Green Energy Act were seen in 2011.
-
--   The graph above shows parallel trends between treatment and control groups in 2003 and 2007 (the baseline and early stages of the intervention). Treatment effect is exemplified in the treatment groups change of Liberal Party voting shares in 2011. Thus, the parallel trend assumption is met, but should be considered with caution due to the limited pre-treatment measurements. One pre-treatment measurement and one early-intervention stage measurement, its not enough observations to be super confident on meeting the parallel trends assumption.
+*Response (4-6 sentences):* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 ------------------------------------------------------------------------
 
@@ -516,8 +482,6 @@ $$
 ------------------------------------------------------------------------
 
 ### Example 1: Randomly sample 40 precincts
-
-**THIS IS WHERE I STOPPED!!!!!!!!!!!!!!!!!!!!!!!!!!!**
 
 -   To illustrate the "dummy variable method" of estimating fixed effects using the the general `lm()` function we are going to randomly sample 40 precincts (20 "treated" precincts with proposed turbines).
 -   If we attempted to use this approach with the full sample estimating all 6185 (n-1) precinct-level coefficients is impractical (it would take a long time).
@@ -623,3 +587,4 @@ praise("${EXCLAMATION}! 🚀 Great work - You are ${adjective}! 💫")
 
 say("The End", "duck")
 ```
+
