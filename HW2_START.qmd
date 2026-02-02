@@ -517,29 +517,30 @@ $$
 
 ### Example 1: Randomly sample 40 precincts
 
-**THIS IS WHERE I STOPPED!!!!!!!!!!!!!!!!!!!!!!!!!!!**
-
 -   To illustrate the "dummy variable method" of estimating fixed effects using the the general `lm()` function we are going to randomly sample 40 precincts (20 "treated" precincts with proposed turbines).
 -   If we attempted to use this approach with the full sample estimating all 6185 (n-1) precinct-level coefficients is impractical (it would take a long time).
 
 ```{r}
 set.seed(40002026)
 
+# Dataframe of just precinct_id and if have proposed_turbine
 precinct_frame <- panel_data %>%
-  group_by(precinct_id) %>%
-  summarise(
+  group_by(precinct_id) %>% 
+  summarise( # where proposed_turbine = 1 => TRUE --> convert results to an integers (0,1)
     proposed_turbine_any = as.integer(any(proposed_turbine == 1, na.rm = TRUE)),
     .groups = "drop"
   )
 
+# Randomly selecting 20 precinct_ids 
 ids_40 <- precinct_frame %>%
   group_by(proposed_turbine_any) %>%
   slice_sample(n = 20) %>%
   ungroup() %>%
   select(precinct_id)
 
+# Get the panel_data for the randomly selected rows 
 sample_40_precincts <- panel_data %>%
-  semi_join(ids_40, by = "precinct_id")
+  semi_join(ids_40, by = "precinct_id") # semi_join: return all rows from x with a match in y.
 
 ```
 
@@ -548,32 +549,42 @@ sample_40_precincts <- panel_data %>%
 #### **3C:** Estimate a fixed effects model using `lm()` with fixed effects added for `precinct` and `year` using the sample of 40 precincts just created.
 
 ```{r}
-model1_ff <- 
+# lm model with precinct and year as fixed 
+model1_ff <- lm(
+    perc_lib ~ proposed_turbine + precinct_id + year,
+    data = sample_40_precincts 
+)
 
-# summ(*** , model.fit = FALSE)
+summ(model1_ff, model.fit = FALSE, digits = 3)
 ```
 
 ```{r}
-# summ(*** , model.fit = FALSE, [. . .])
+summ(model1_ff, model.fit = FALSE, digits = 3, robust = TRUE)
 ```
 
 **3C.Q1:** Intuition check: Is the *signal-to-noise* ratio for the treatment estimate greater than *2-to-1*?
 
-*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+-   For the treatment estimate, the *signal-to-noise* ratio is less than the 2-to-1 threshold. The treatment effect is marginally significant (p = 0.067) and the estimate is twice as large as its standard error. Meaning there is signal but it is noisy with moderate uncertainty.
+
+-   \|estimate\| / standard error = \|-0.057\| / 0.031 = 1.83871
 
 > HINT: Add the argument `digits = 3` to the `summ()` function above
 
 **3C.Q2:** Re-run the `summ()` function using the *heteroscedasticiy robust standard error adjustment* (`robust = TRUE`). Did the standard error (S.E.) estimates change? Explain why.
 
-*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+-   The standard error increases (0.031 –\> 0.039) and the p-value increases (0.067 –\> 0.147). With the *heteroscedasticiy robust standard error adjustment,* the treatment effect has greater variance and is non-significant.
+
+-   The OLS standard error assumes homoscedasticity, where the variance of errors is constant across all observations. When relaxing that assumption with `robust = TRUE`, the variance can differ across observations. For instance, Liberal vote share can now vary between treated vs. control precincts, different precincts over time, and different election years.
+
+-   The OLS did not account for heteroscedasticity which led to overconfident inference.
 
 **3C.Q3:** Compare results of the model above to the findings from the fixed effects analysis in the Stokes (2015) study. Why might the results be similar or different?
 
-*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+-   Both the model above and Stokes (2015) study show a decline in Liberal voting shares in relation to proposed turbine implementation in precincts. However, the model above has larger uncertainty and no statistical significance. The models main difference is the sample size. Stokes model includes 18,558 observations (6,186 precincts for 3 years), whereas my model only includes 120 observations (40 precincts for 3 years ). While the model above is consistent with the patterns in Stokes model, the small sample decreases the model's statistical power and increases uncertainty.
 
 **3C.Q4:** In your own words, explain why it is advantageous from a causal inference perspective to include year and precinct fixed effects. Explain how between-level and within-level variance is relevant to the problem of omitted variable bias (OVB).
 
-*Response (2-4 sentences):* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+-   Adding precinct as a fixed effect controls for all the possible time-invariant confounding differences between precincts, such as demographic, geographic, and pre-existing beliefs. Adding year as a fix effect controls for differences/trends that happened between 2003, 2007, and 2011 that effected all precincts equally. Adding fixed effects that help control between-level variance (differences across precincts) and within-level variance (changes within the same precinct over time) allow for unobserved and observed differences in the parameters to be "differenced out", reducing OVB.
 
 ------------------------------------------------------------------------
 
@@ -583,16 +594,23 @@ See vignette here: [fixest walkthrough](https://cran.r-project.org/web/packages/
 
 ```{r}
 
-model2_ff <- 
+model2_ff <-  feols(
+    perc_lib ~ proposed_turbine | year + precinct_id, # Add fixed effects 
+    data = panel_data, 
+    cluster = ~precinct_id # cluster by precinct_id 
+)
+    
 
-summary()
+summary(model2_ff, model.fit = FALSE)
 ```
 
 **3D.Q1:** Interpret the model results and translate findings to be clear to an audience that may not have a background in causal inference (Econometrics) methods.
 
 In panel data settings, why is clustering by precinct important (i.e., `cluster = ~precinct_id`) ?”
 
-*Response (4-6 sentences):* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+-   In this study, we are investigating if communities near wind turbines turned against the Liberal government that approved them. To understand the *change* of voting behavior, we compared precincts to themselves over time. We found that precincts with proposed wind turbines had a 4.157% decrease of Liberal Party vote shares, which shows local voter backlash.
+
+-   A single precinct's voting trends over the years are correlated. For instances, how a community votes in 2003 is correlated to their votes in 2007. Clustering by precinct accounts for this within-precinct correlation.
 
 ------------------------------------------------------------------------
 
@@ -600,18 +618,23 @@ In panel data settings, why is clustering by precinct important (i.e., `cluster 
 
 ```{r}
 
-model3_ff <- 
+model3_ff <-  feols(
+    perc_lib ~ operational_turbine | year + precinct_id, # Add fixed effects 
+    data = panel_data, 
+    cluster = ~precinct_id # cluster by precinct_id 
+)
+    
+summary(model3_ff, model.fit = FALSE)
 
-summary()
 ```
 
 **3E.Q1:** Interpret the `model3_ff` results as clearly and **concisely** as you can.
 
-*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+-   Precincts with operational wind turbines had approximately a 9.276% decrease of Liberal Party vote shares compared to what would have happened without the turbines, which shows local voter backlash.
 
 **3E.Q2:** Why do you think the effect of proposed wind turbines is different from operational wind turbines. Develop your own theory about why incumbent vote share is affected in this way. Use the Stokes (2015) study to inform your response as needed.
 
-*Response:* \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+-   Physically having to deal with wind turbines in your communities is drastically different than possibly/planning to have turbines in your community. Communities that actually deal with wind turbines everyday have a larger grudge with Liberal Party, which leads to a larger reduction in Liberal Party voting shares.
 
 ------------------------------------------------------------------------
 
