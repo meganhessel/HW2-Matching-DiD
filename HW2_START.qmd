@@ -1,7 +1,7 @@
 ---
 title: "🌬️🗳 Assignment 2: Wind Turbines, Matching, and Difference-in-Differences"
 subtitle: "Replicate causal inference identification strategies in Stokes (2015) "
-author: "EDS 241 / ESM 244 (DUE: 2/4/26)"
+author: "Megan Hessel"
 format:
   html:
     theme: sketchy
@@ -21,7 +21,7 @@ All written responses must be written independently (in your own words).
 
 Keep your work readable: Use clear headings and label plot elements thoughtfully.
 
-Assignment submission (YOUR NAME): \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+Assignment submission: [Megan Hessel]{.underline}
 
 ------------------------------------------------------------------------
 
@@ -246,8 +246,6 @@ summary(match_model)
 ```
 
 **2C.Q1** Using the `summary()` output: Which covariate had the largest and smallest `Std. Mean Diff.` before matching. Next, compare largest/smallest `Std. Mean Diff.` after matching.
-
-**COMPARE TO OTHERS. IDK IF LOOK AT [ABOSOLUTE VALUES]{.underline} (lowest = closest to 0) OR NOT (lowest = most negative)**
 
 -   Before matching, `log_pop_den` covariate had the largest `Std. Mean Diff` and `log_median_inc` covariate had the smallest.
 
